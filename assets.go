@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -43,4 +46,55 @@ func mediaTypeToExt(mediaType string) string {
 		return ".bin"
 	}
 	return "." + parts[1]
+}
+
+func (cfg apiConfig) getObjectURL(key string) string {
+	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", cfg.s3Bucket, cfg.s3Region, key)
+}
+
+type Output struct {
+	Streams []struct {
+		Width              int    `json:"width,omitempty"`
+		Height             int    `json:"height,omitempty"`
+		SampleAspectRatio  string `json:"sample_aspect_ratio,omitempty"`
+		DisplayAspectRatio string `json:"display_aspect_ratio,omitempty"`
+	} `json:"streams"`
+}
+
+func getVideoAspectRatio(filePath string) (string, error) {
+	cmd := exec.Command("ffprobe", "-v", "error", "-print_format", "json", "-show_streams", filePath)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+
+	var data Output
+	err = json.Unmarshal(out.Bytes(), &data)
+	if err != nil {
+		return "", err
+	}
+
+	return data.Streams[0].DisplayAspectRatio, nil
+}
+
+func processVideoForFastStart(filePath string) (string, error) {
+	outputFile := filePath + ".processing" + ".mp4"
+
+	cmd := exec.Command(
+		"ffmpeg",
+		"-i", filePath,
+		"-c", "copy",
+		"-movflags", "faststart",
+		"-f", "mp4",
+		outputFile,
+	)
+
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+
+	return outputFile, nil
 }
