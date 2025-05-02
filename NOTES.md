@@ -47,3 +47,29 @@ Object storage is designed to be more scalable, available, and durable than file
 
 ## Encryptions
 Files in S3 are encrypted at rest ("at rest" just means "while they're sitting in storage on disk") by default. This was not always the case, but it is now! You don't need to do anything, the S3 service takes care of all of that for you. When you access S3 with your credentials, the service decrypts the files for you before handing them over.
+
+## A CDN like CloudFront has two purposes (as far as the context of this course is concerned):
+
+Speed: Users get content from the server closest to them, which is faster than getting it from the origin server.
+Security: The origin server is hidden from the public internet, and only the CDN can access it. This is a security measure that can help prevent DDoS attacks and other malicious activity.
+
+## Availability
+It's about how often your service is up and running, serving user requests. It's often measured in "nines" - like "three nines" (99.9%) or "five nines" (99.999%).
+
+Users don't like when they log into your web app and stuff isn't loading. They don't like to hear that you're "down for maintenance".
+
+## Reliability
+
+Reliability is about how well your system works when it's up. For example, maybe your server is responding to HTTP requests, but it's returning erroneous data because some dependency is down. That's not reliable.
+
+The reliability of S3 is very high out of the box.
+
+## Durability
+It's about how well your data survives in the event of an outage. For example, let's say you're running your own single server:
+
+- What happens if the intern accidentally rm -rfs the user_pics directory?
+- What happens if the server's hard drive fails?
+- What happens if the data center it's in catches fire?
+=> These are all durability questions. Durability is primarily about backups and redundancy. In the case of S3, it automatically replicates your data across multiple servers. If one goes down, the backups are there.
+
+According to these docs: S3's standard storage provides 99.999999999% durability and 99.99% availability of objects over a given year.
