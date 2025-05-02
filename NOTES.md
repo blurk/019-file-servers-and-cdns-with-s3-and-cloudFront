@@ -30,3 +30,20 @@ Object storage is designed to be more scalable, available, and durable than file
 ## Approaches to videos
 1. **Adaptive streaming**: Standard mp4 files have a single resolution and bitrate. If a user's connection speed is unstable, HLS or MPEG-DASH allows for changing the quality of the stream on the fly. You may have noticed on YouTube or Netflix that your video quality changes based on your connection speed. Dropping to lower resolution is better than endlessly buffering.
 2. **Live streaming**: Standard mp4 files are not designed to be updated in real-time. You'd want to use a lower-latency protocol like WebRTC or RTMP for live streaming.
+
+## Private bucket
+
+### A good use case for a public bucket might be:
+
+- Users' profile pictures
+- Public certificates of completion (we do this for Boot.dev!)
+- Dynamically generated images for social sharing (like the link previews you see on Twitter)
+
+### While a private bucket might contain
+
+- A user's privately uploaded documents
+- A user's draft content that they haven't published yet
+- The org's video content that's only available to paying customers
+
+## Encryptions
+Files in S3 are encrypted at rest ("at rest" just means "while they're sitting in storage on disk") by default. This was not always the case, but it is now! You don't need to do anything, the S3 service takes care of all of that for you. When you access S3 with your credentials, the service decrypts the files for you before handing them over.

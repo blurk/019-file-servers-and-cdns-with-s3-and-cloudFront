@@ -1,15 +1,20 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/bootdotdev/learn-file-storage-s3-golang-starter/internal/auth"
+	"github.com/bootdotdev/learn-file-storage-s3-golang-starter/internal/database"
 	"github.com/google/uuid"
 )
 
@@ -126,7 +131,7 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	s3Url := cfg.getObjectURL(key)
+	s3Url := fmt.Sprintf("%s,%s", cfg.s3Bucket, key)
 	video.VideoURL = &s3Url
 
 	err = cfg.db.UpdateVideo(video)
@@ -135,5 +140,28 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, video)
+	videoWithPresigned, err := cfg.dbVideoToSignedVideo(video)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error create video", err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, videoWithPresigned)
+}
+
+func (cfg *apiConfig) dbVideoToSignedVideo(video database.Video) (database.Video, error) {
+	if len(*video.VideoURL) == 0 {
+		return database.Video{}, errors.New("VideoURL is empty")
+	}
+
+	parts := strings.Split(*video.VideoURL, ",")
+
+	presignedURl, err := generatePresignedURL(cfg.s3Client, parts[0], parts[1], time.Minute*5)
+	if err != nil {
+		return database.Video{}, err
+	}
+
+	video.VideoURL = &presignedURl
+
+	return video, nil
 }
